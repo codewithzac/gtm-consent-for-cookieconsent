@@ -1,4 +1,4 @@
-﻿___INFO___
+___INFO___
 
 {
   "type": "TAG",
@@ -206,6 +206,7 @@ const localStorage = require('localStorage');
 const consentConfig = callInWindow('CookieConsent.getConfig');
 const dataLayerPush = createQueue('dataLayer');
 const eventName = copyFromDataLayer('event');
+log('Event triggering consent evaluation: ' + eventName);
 
 // Function to validate user consent
 function validateConsent(string) {
@@ -288,12 +289,15 @@ function mapConsent(object) {
     }
   }
 
+  log('Setting updated consent using data from the consent object: ' + JSON.stringify(consentObj));
   updateConsentState(consentObj);
 
   // Send "consent_update" dataLayer event for "onFirstConsent", or "onChange" (if there are changes)
   // This is important for consent logging and for tags that need to react to consent changes
-  log('Event name: ' + eventName + ', consent changes: ' + consentChanges);
   if ((eventName == 'onFirstConsent') || (eventName == 'onChange' && consentChanges > 0)) {
+    log(eventName === 'onFirstConsent' ?
+      'First consent decision - triggering consent_update event!' :
+      'Consent changed (' + consentChanges + ' changes) - triggering consent_update event!');
     consentObj.event = 'consent_update';
     consentObj.consent_id = object.consentId;
     consentObj.consent_timestamp = object.consentTimestamp;    
@@ -307,21 +311,18 @@ function mapConsent(object) {
 function mapDefault() {
   const source = consentConfig ? 'CookieConsent' : 'tag';
   const mode = consentConfig ? consentConfig.mode : data.mode;
-  log('Using ' + source + ' configuration, mode: ' + mode);
-
   const consentObj = data.consentMapping.reduce((obj, mapping) => {
-    obj[mapping.gtmCategory] = mode == 'opt-out' ? 'granted' : 'denied';
+    if (mapping.gtmCategory != 'strictly_necessary') {
+      obj[mapping.gtmCategory] = mode == 'opt-out' ? 'granted' : 'denied';
+    }
     return obj;
   }, {});
   
-  if (consentObj.strictly_necessary) {
-    Object.delete(consentObj, 'strictly_necessary');
-  }
-
   if (data.wait_for_update > 0) {
     consentObj.wait_for_update = data.wait_for_update;
   }
-  
+
+  log('Setting default consent using ' + source + ' configuration, mode is ' + mode + ': ' + JSON.stringify(consentObj));
   setDefaultConsentState(consentObj);
   return true;
 }
