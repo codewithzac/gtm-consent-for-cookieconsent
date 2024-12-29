@@ -74,8 +74,9 @@ If you have consent logging requirements, or tags that need to respond to consen
 4. Enter `consent_update` into the **Event name** box
 5. Click the **Save** button at the top-right
 
-## Create Consent Type variable *(optional)*
-If you have tags that need to behave differently for default consent vs. consent updates, you'll need to create a **Custom JavaScript** variable. Sadly, this doesn't work in a template, as it reads the `google_tag_data` global object:
+## Create Consent Type variable and trigger *(optional)*
+If you have tags that need to behave differently for default consent vs. consent updates, you'll need to create a **Custom JavaScript** variable and trigger. Sadly, this doesn't work in a template, as it reads the `google_tag_data` global object.
+### Variable
 1. Navigate to the **Variables** menu
 2. In the **User-Defined Variables** section, click the **New** button
 3. Give the variable a name - e.g., `Consent Type`
@@ -90,6 +91,15 @@ function() {
   if (tagData.ics.usedDefault) return 'implicit';
 }
 ```
+### Trigger
+1. Navigate to the **Triggers** menu, click the **New** button
+2. Give the trigger a name - e.g., `All Pages - Explicit Consent`
+3. Click into **Trigger Configuration**, then select **Page View** from the Page View section
+4. Choose **Some Page Views**
+5. In the first drop down, choose **Consent Type**
+6. In the second drop down, choose **equals**
+7. In the text box, enter `explicit`
+8. Click the **Save** button at the top-right
 
 ## Next steps
 Before publishing, test your configuration carefully to make sure everything works:
