@@ -34,16 +34,11 @@ The default Consent Initialisation trigger already exists, but you also want to 
 2. Select the **Triggers** menu, then click the **New** button
 3. Give the trigger a name - e.g., `Consent Events`
 4. Click into **Trigger Configuration**, then select **Custom Event** from the Other section
-5. If using my Wordpress plugin: enter `onFirstConsent|onChange` into the **Event name** box, then check the **Use regex matching** checkbox
-6. Click the **Save** button at the top-right
-
-## Create Consent Update trigger *(optional)*
-If you have consent logging requirements, or tags that need to respond to consent changes on the page:
-1. While in the **Triggers** menu, click the **New** button again
-2. Give the trigger a name - e.g., `Consent Update`
-3. Click into **Trigger Configuration**, then select **Custom Event** from the Other section
-4. Enter `consent_update` into the **Event name** box
-5. Click the **Save** button at the top-right
+5. If you're using my [Wordpress plugin](https://github.com/codewithzac/wordpress-cookieconsent-loader) with the default configuration:
+   - Enter `onFirstConsent|onChange` into the **Event name** box, then check the **Use regex matching** checkbox.
+6. If you're not, or if you've customised things:
+   - Please check your CookieConsent configuration and ensure you're triggering dataLayer events for the **onFirstConsent** and **onChange** CookieConsent events. Check the [default configuration file](https://github.com/codewithzac/wordpress-cookieconsent-loader/blob/main/cookieconsent-loader/assets/cookieconsent.config.dist.js) for the Wordpress plugin to see an example.
+8. Click the **Save** button at the top-right
 
 ## Add the GTM Consent for CookieConsent tag
 When adding the tag, you will need to refer to your CookieConsent configuration for the tag settings:
@@ -67,9 +62,34 @@ You likely want to have mappings as follows - but *don't* copy the following wit
 >[!WARNING]
 >If there are mismatches between the tag configuration and CookieConsent configuration, weird behaviour is almost guaranteed..
 
-5. Click into **Triggering**, then select *BOTH* `Consent Events` and `Consent Initialisation - All Pages` (but not `Consent Update`)
+5. Click into **Triggering**, then select *BOTH* `Consent Events` and `Consent Initialisation - All Pages`
 6. Click the **Add** button at the top-right
 7. Click the **Save** button at the top-right
+
+## Create Consent Update trigger *(optional)*
+If you have consent logging requirements, or tags that need to respond to consent changes on the page:
+1. Navigate to the **Triggers** menu, click the **New** button
+2. Give the trigger a name - e.g., `Consent Update`
+3. Click into **Trigger Configuration**, then select **Custom Event** from the Other section
+4. Enter `consent_update` into the **Event name** box
+5. Click the **Save** button at the top-right
+
+## Create Consent Type variable *(optional)*
+If you have tags that need to behave differently for default consent vs. consent updates, you'll need to create a **Custom JavaScript** variable. Sadly, this doesn't work in a template, as it reads the `google_tag_data` global object:
+1. Navigate to the **Variables** menu
+2. In the **User-Defined Variables** section, click the **New** button
+3. Give the variable a name - e.g., `Consent Type`
+4. Click into **Variable Configuration**, then select **Custom JavaScript**
+5. Paste the code below, then click the **Save** button at the top-right
+
+```javascript
+function() {
+  var tagData = window.google_tag_data;
+  if (!tagData.ics) return;
+  if (tagData.ics.usedUpdate) return 'explicit';
+  if (tagData.ics.usedDefault) return 'implicit';
+}
+```
 
 ## Next steps
 Before publishing, test your configuration carefully to make sure everything works:
