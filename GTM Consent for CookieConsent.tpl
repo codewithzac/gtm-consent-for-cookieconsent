@@ -140,6 +140,53 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "GROUP",
+    "name": "consentEventGroup",
+    "displayName": "Consent Events",
+    "groupStyle": "ZIPPY_OPEN",
+    "subParams": [
+      {
+        "type": "TEXT",
+        "name": "onFirstConsent",
+        "displayName": "First Consent Event Name",
+        "simpleValueType": true,
+        "defaultValue": "onFirstConsent",
+        "help": "The name for the dataLayer event triggered by the CookieConsent \u003ca href\u003d\"https://cookieconsent.orestbida.com/advanced/callbacks-events.html#onfirstconsent\" target\u003d\"_blank\"\u003eonFirstConsent\u003c/a\u003e event."
+      },
+      {
+        "type": "TEXT",
+        "name": "onChange",
+        "displayName": "Consent Change Event Name",
+        "simpleValueType": true,
+        "defaultValue": "onChange",
+        "help": "The name for the dataLayer event triggered by the CookieConsent \u003ca href\u003d\"https://cookieconsent.orestbida.com/advanced/callbacks-events.html#onchange\" target\u003d\"_blank\"\u003eonChange\u003c/a\u003e event."
+      },
+      {
+        "type": "CHECKBOX",
+        "name": "onUpdateEnabled",
+        "checkboxText": "Enable Consent Update Events",
+        "simpleValueType": true,
+        "defaultValue": true,
+        "help": "Check this box to trigger a dataLayer event every time a consent decision is made - useful for consent logging, and for tags that need to react to consent changes on the page."
+      },
+      {
+        "type": "TEXT",
+        "name": "onUpdate",
+        "displayName": "Consent Update Event Name",
+        "simpleValueType": true,
+        "defaultValue": "consent_update",
+        "help": "If consent update events are enabled, choose a name for the event.",
+        "enablingConditions": [
+          {
+            "paramName": "onUpdateEnabled",
+            "paramValue": true,
+            "type": "EQUALS"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "GROUP",
     "name": "otherSettingsGroup",
     "displayName": "Other Settings",
     "subParams": [
@@ -202,11 +249,17 @@ const setDefaultConsentState = require('setDefaultConsentState');
 const getCookieValues = require('getCookieValues');
 const localStorage = require('localStorage');
 
-// Set up consent constants
+// Consent template constants
 const consentConfig = callInWindow('CookieConsent.getConfig');
 const dataLayerPush = createQueue('dataLayer');
 const eventName = copyFromDataLayer('event');
 log('Event triggering consent evaluation: ' + eventName);
+
+// Event constants
+const onFirstConsent = data.onFirstConsent;
+const onChange = data.onChange;
+const onUpdateEnabled = data.onUpdateEnabled;
+const onUpdate = data.onUpdate;
 
 // Function to validate user consent
 function validateConsent(string) {
@@ -292,16 +345,19 @@ function mapConsent(object) {
   log('Setting updated consent using data from the consent object: ' + JSON.stringify(consentObj));
   updateConsentState(consentObj);
 
-  // Send "consent_update" dataLayer event for "onFirstConsent", or "onChange" (if there are changes)
-  // This is important for consent logging and for tags that need to react to consent changes
-  if ((eventName == 'onFirstConsent') || (eventName == 'onChange' && consentChanges > 0)) {
-    log(eventName === 'onFirstConsent' ?
-      'First consent decision - triggering consent_update event!' :
-      'Consent changed (' + consentChanges + ' changes) - triggering consent_update event!');
-    consentObj.event = 'consent_update';
-    consentObj.consent_id = object.consentId;
-    consentObj.consent_timestamp = object.consentTimestamp;    
-    dataLayerPush(consentObj);
+  // If enabled - trigger consent update dataLayer event for:
+  // - the "onFirstConsent" CookieConsent event, or
+  // - the "onChange" CookieConsent event (if there are changes)
+  if (onUpdateEnabled) {
+    if ((eventName == onFirstConsent) || (eventName == onChange && consentChanges > 0)) {
+      log(eventName == onFirstConsent ?
+        'First consent - triggering ' + onUpdate + ' event' :
+        'Consent changed (' + consentChanges + ' changes)  - triggering ' + onUpdate + ' event');
+      consentObj.event = onUpdate;
+      consentObj.consent_id = object.consentId;
+      consentObj.consent_timestamp = object.consentTimestamp;    
+      dataLayerPush(consentObj);
+    }
   }
   return true;
 }
