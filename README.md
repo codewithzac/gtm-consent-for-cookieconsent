@@ -29,17 +29,39 @@ If you haven't already done so, you need to configure your GTM container for con
 4. Click the **Save** button at the top-right if you needed to check this box
 
 ## Create Consent Events trigger
-The default Consent Initialisation trigger already exists, but you also want to be able to react to consent events:
+The default Consent Initialisation trigger already exists, but you also need to be able to react to consent events:
 1. Navigate to the **Workspace** tab
 2. Select the **Triggers** menu, then click the **New** button
 3. Give the trigger a name - e.g., `Consent Events`
 4. Click into **Trigger Configuration**, then select **Custom Event** from the Other section
 5. If you're using my [Wordpress plugin](https://github.com/codewithzac/wordpress-cookieconsent-loader) with the default configuration:
    - Enter `onFirstConsent|onChange` into the **Event name** box, then check the **Use regex matching** checkbox.
-6. If you're not, or if you've customised things:
-   - Please check your CookieConsent configuration and ensure you're triggering dataLayer events for the **onFirstConsent** and **onChange** CookieConsent events. Check the [default configuration file](https://github.com/codewithzac/wordpress-cookieconsent-loader/blob/main/cookieconsent-loader/assets/cookieconsent.config.dist.js) for the Wordpress plugin to see an example.
-8. Click the **Save** button at the top-right
+6. If you're not using my plugin, or if you've customised things:
+   - Please check your CookieConsent configuration and ensure you're triggering dataLayer events for the **onFirstConsent** and **onChange** CookieConsent events - see below for what needs to be included in the configuration.
+   - If you've changed the name of either of the dataLayer events, you will need to update the event name regex in the trigger configuration accordingly.
+7. Click the **Save** button at the top-right
 
+Reference: the following needs to appear in the CookieConsent configuration to trigger the dataLayer events mentioned above:
+```javascript
+// Trigger GTM dataLayer events when updating consent
+// These are optional, but required if using the "GTM Consent for CookieConsent" GTM template
+onFirstConsent: function(detail) {
+ window.dataLayer = window.dataLayer || [];
+ window.dataLayer.push({
+   event: 'onFirstConsent',
+   consentCategories: detail.cookie.categories,
+   consentServices: detail.cookie.services
+ });
+},
+onChange: function(detail) {
+ window.dataLayer = window.dataLayer || [];
+ window.dataLayer.push({
+   event: 'onChange',
+   consentCategories: detail.cookie.categories,
+   consentServices: detail.cookie.services
+ });
+}
+```
 ## Add the GTM Consent for CookieConsent tag
 When adding the tag, you will need to refer to your CookieConsent configuration for the tag settings:
 1. Select the **Tags** menu, then click the **New** button
@@ -49,7 +71,7 @@ When adding the tag, you will need to refer to your CookieConsent configuration 
 
 Each GTM category can only be mapped to one CookieConsent category, however you can have one CookieConsent category mapped to multiple GTM categories - as shown below.
 
-You likely want to have mappings as follows - but *don't* copy the following without checking your configuration first!:
+You likely want to have mappings similar to the following (but check your CookieConsent configuration to be sure!):
 
 | Google Tag Manager | CookieConsent |
 | ------------------ | ------------- |
@@ -74,8 +96,8 @@ If you have consent logging requirements, or tags that need to respond to consen
 4. Enter `consent_update` into the **Event name** box
 5. Click the **Save** button at the top-right
 
-## Create Consent Type variable and trigger *(optional)*
-If you have tags that need to behave differently for default consent vs. consent updates, you'll need to create a **Custom JavaScript** variable and trigger. Sadly, this doesn't work in a template, as it reads the `google_tag_data` global object.
+## Create Consent Type variable and All Pages - Explicit Consent trigger *(optional)*
+If you have tags that need to behave differently on page load for default consent vs. consent updates (typically needed if the default consent is granted, but you only want to fire a tag if the user actually saves that preference as well) - you'll need to create a **Custom JavaScript** variable and trigger. Sadly, this doesn't work in a template, as it reads the `google_tag_data` global object.
 ### Variable
 1. Navigate to the **Variables** menu
 2. In the **User-Defined Variables** section, click the **New** button
@@ -105,6 +127,7 @@ function() {
 Before publishing, test your configuration carefully to make sure everything works:
 - Check each of your tags for Advanced Settings > Consent Settings, to make sure that consent is configured appropriately
 - If you created the **Consent Update** trigger above, consider which tags need this added to their Triggering section, if any
+- If you created the **All Pages - Explicit Consent** trigger above, consider which tags need this added to their Triggering section, if any
 - Use GTM's Preview Mode to ensure that tags are being blocked / updated according to the user consent preferences and tag settings
 - Test as many different consent flows as possible: no consent set, consent choices set, consent choices updated
 
